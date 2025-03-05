@@ -1,0 +1,1 @@
+from helper.validate import is_nan_value

@@ -1,0 +1,1 @@
+EMBED_COLUMN_NAME = "embed_content"
