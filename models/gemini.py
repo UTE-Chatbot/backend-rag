@@ -1,4 +1,3 @@
-from langchain import PromptTemplate
 from langchain.schema import StrOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 import os 
@@ -14,7 +13,7 @@ class BaseLLM:
 class Gemini(BaseLLM):
     def __init__(self, api_key: str, llm_prompt_template: any):
         super().__init__("gemini-1.5-pro", api_key)
-        self.llm_prompt = PromptTemplate.from_template(llm_prompt_template)
+        self.llm_prompt = llm_prompt_template
         self.llm = ChatGoogleGenerativeAI(model=self.name, google_api_key=self.api_key)
         self.chain = self.llm_prompt | self.llm | StrOutputParser()
 
