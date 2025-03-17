@@ -309,7 +309,7 @@ class Vectorstore:
         unique_matches = []
         
         while current_top_k <= max_top_k and len(unique_matches) < self.retrieve_top_k:
-            res = self.idx.query(vectogcloud compute ssh hcmute-chat --zone "asia-northeast1-b"r=query_emb, top_k=current_top_k, include_metadata=True)
+            res = self.idx.query(vector=query_emb, top_k=current_top_k, include_metadata=True)
             unique_matches = get_unique_matches(res['matches'])
             current_top_k *= 2
 
