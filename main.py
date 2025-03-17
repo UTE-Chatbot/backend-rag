@@ -25,7 +25,8 @@ step_back_llm_prompt_template = PromptTemplate(
     Nhiệm vụ của bạn là viết lại câu hỏi của người dùng sao cho rõ ràng, đầy đủ và dễ hiểu hơn,  
     nhưng vẫn giữ nguyên ý nghĩa gốc.  Nếu câu hỏi là về tư vấn ngành hãy làm rõ câu hỏi đó ra để giúp bạn hiểu hơn về ngành.
 
-    Hãy đảm bảo câu hỏi sau khi chỉnh sửa có đủ ngữ cảnh và không gây hiểu lầm.  Hãy từ chối việc trả lời các câu hỏi đi ra ngoài phạm vi tư vấn tuyển sinh của trường.
+    Hãy đảm bảo câu hỏi sau khi chỉnh sửa có đủ ngữ cảnh và không gây hiểu lầm.  Hãy từ chối việc trả lời các câu hỏi vi phạm pháp luật hoặc không phù hợp với đạo đức.
+    1. Hiện tại trường không còn ngành đào tạo chất lượng cao
 
     Câu hỏi cần chỉnh sửa: "{question}"  
     Câu hỏi đã chỉnh sửa:
@@ -64,24 +65,6 @@ def pipeline(query: str, is_logging_retrieval: bool = False, is_logging_qa: bool
         })
         q_a.append({"question": query, "answer": answer, "context":context, "docs": docs})
     return answer
-
-# print(pipeline("Lịch sử hình thành và phát triển HCMUTE?", is_logging_qa=True))
-# # print(pipeline("trường mình có làm việc t7 k ạ", is_logging_qa=True))
-# # print(pipeline("Cho em hỏi ngành công nghệ kỹ thuật ô tô là mình học về ô tô điện hay là mình học về ô tô truyền thống hay là học cả 2 ạ", is_logging_qa=True))
-# # print(pipeline("Nhà gửi xe trường mình hay kẹt không ạ", is_logging_qa=True))
-# # print(pipeline("Trường có học bổng không?", is_logging_qa=True))
-# # print(pipeline("Trường có ký túc xá không?", is_logging_qa=True))
-# # print(pipeline("Trường có học phí không?", is_logging_qa=True))
-# # print(pipeline("Ngành của trường", is_logging_qa=True))
-# print(pipeline("Nhuộm tóc được k v?", is_logging_qa=True))
-# print(pipeline("Trường thành lập bao lâu rồi?", is_logging_qa=True))
-# print(pipeline("Có nên học spkt?", is_logging_qa=True))
-# print(pipeline("Ai là hiệu trưởng v", is_logging_qa=True))
-# print(pipeline("Ai là hiệu phó v", is_logging_qa=True))
-
-
-
-# # UI
 
 import streamlit as st
 import random

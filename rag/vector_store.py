@@ -124,6 +124,8 @@ class Vectorstore:
         # Loop index
         for i in range(len(chunks)):
             chunk = chunks[i]
+            if (chunk["category"] == "FAQ"):
+                continue
             print("Chunk:", chunk["content"])
             questions = self.generate_questions(chunk['content'])
 
@@ -176,6 +178,8 @@ class Vectorstore:
         
         print("Document chunks embedded ✅")
             
+        if len(self.aug_docs) == 0:
+            return
         self.aug_docs_len = len(self.aug_docs)
         print("Aug docs len:", self.aug_docs[0])
         for i in range(0, self.aug_docs_len, batch_size):
@@ -369,7 +373,7 @@ def init_vectorstore(data_path: str, db_name: str, embed_columns:List[str], embe
     if not vectorstore.is_indexed():
         print("Indexing documents...")
         chunks = load_data(data_path, embed_columns)
-        vectorstore.load_chunk(chunks[:2])
+        vectorstore.load_chunk(chunks[284:])
         print("Documents loaded and chunked ✅")
         vectorstore.embed()
         print("Documents embedded ✅")
