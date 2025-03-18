@@ -20,3 +20,7 @@ def load_data(file_path, embed_columns):
                 record[key] = ""
         chunks.append(record)
     return chunks
+
+def load_unique_categories(file_path, category_column):
+    df = pd.read_csv(file_path)
+    return df[category_column].unique().tolist()

@@ -56,14 +56,19 @@ class Vectorstore:
         self.docs_embs = []
         self.aug_docs = []  
         self.aug_docs_embs = []
+        self.category_tags = []
         self.retrieve_top_k = 20
         self.embedding_model = embedding_model
         self.rerank_top_k = rerank_top_k
         self.index_name = index_name
         if self.is_indexed():
             self.idx = pc.Index(self.index_name)
+
+    def load_vector_category_tags(self):
+        # Get all values of category in self.index
+        pass    
         
-    def generate_questions(text_chunk, num_questions=3):
+    def generate_questions(self, text_chunk, num_questions=3):
         """
         Generates relevant questions that can be answered from the given text chunk.
 
@@ -91,7 +96,7 @@ class Vectorstore:
         )
 
 
-        model = Gemini(api_key=os.getenv("GEMINI_API_KEY"), llm_prompt_template=prompt)
+        model = Gemini(api_key=os.getenv("GEMINI_API_KEY"), llm_prompt_template=prompt, model_variant="gemini-1.5-pro")
         
         # Extract and clean questions from the response
         questions_text = model.chain.invoke({
@@ -119,23 +124,29 @@ class Vectorstore:
         self.docs = chunks
         self.aug_docs = []
         # meta_data = json.loads(chunks[0]['meta_data'])
-        # print(meta_data)
-
-        # Loop index
-        for i in range(len(chunks)):
-            chunk = chunks[i]
-            print("Chunk:", chunk["content"])
-            questions = self.generate_questions(chunk['content'])
-
-            for question in questions:
-                self.aug_docs.append({
-                    "title": chunk['title'],
-                    "content": chunk['content'],
-                    "question": question,
-                    EMBED_COLUMN_NAME: question,
-                    "category": chunk['category'],
-                    "sub_category": chunk['sub_category'],
-                })
+        batch_size = 90
+        for i in range(0, len(chunks), batch_size):
+            batch_chunks = chunks[i:min(i + batch_size, len(chunks))]
+            batch_questions = []
+            
+            # Generate questions for each chunk in the batch
+            for chunk in batch_chunks:
+                print("Processing chunk:", chunk["content"])
+                questions = self.generate_questions(chunk['content'], 4)
+                print("Generated questions:", questions)
+                # Create aug_docs entries for the chunk's questions
+                for question in questions:
+                    self.aug_docs.append({
+                        "title": chunk['title'],
+                        "content": chunk['content'],
+                        "question": question,
+                        EMBED_COLUMN_NAME: question,
+                        "category": chunk['category'],
+                        "sub_category": chunk['sub_category'],
+                        "content_index": chunk['content_index']
+                    })
+            
+            print(f"Processed batch {i//batch_size + 1}, generated {len(self.aug_docs)} questions so far")
 
 
     def load_and_chunk(self) -> None:
@@ -277,7 +288,7 @@ class Vectorstore:
         with open('error.json', 'w') as f:
             json.dump(err, f)
 
-    def retrieve(self, query: str, is_logging: bool, top_k = 0) -> List[Dict[str, str]]:
+    def retrieve(self, query: str, is_logging: bool, category) -> List[Dict[str, str]]:
         """
         Retrieves document chunks based on the given query.
 
@@ -291,7 +302,20 @@ class Vectorstore:
 
         docs_retrieved = []
         query_emb = self.embedding_model.encode([query])[0]
-        
+
+        docs_by_category = []
+        print(category)
+        cat_res = self.idx.query(
+            vector=[0.0]*1024,  # No vector needed
+            filter={
+               "category": {"$eq": category} 
+            },
+            top_k=3,  # Limits results
+            include_values=False,  # Don't return vector values
+            include_metadata=True  # Return metadata only
+        )
+        print("R: ", len(cat_res['matches']))
+
         # Function to get unique matches
         def get_unique_matches(matches):
             seen_content = set()
@@ -323,7 +347,7 @@ class Vectorstore:
         res['matches'] = unique_matches[:self.retrieve_top_k]
         
         docs_to_rerank = [match['metadata']['content'] for match in res['matches']]
-        print("Docs to rerank:", docs_to_rerank)
+        # print("Docs to rerank:", docs_to_rerank)
         rerank_results = co.rerank(
             query=query,
             documents=docs_to_rerank,
@@ -333,8 +357,21 @@ class Vectorstore:
 
         docs_reranked = [res['matches'][result.index] for result in rerank_results.results]
 
+        # Find if filters are present in the metadata
+        if category:
+            docs_by_cat = [match['metadata'] for match in cat_res['matches']]
+            for doc in docs_by_cat:
+                docs_retrieved.append(doc)
+                break
+            # print(docs_reranked)
+            print("DONE HYBRID")
+            # print("---"*5)
+                    
+
         for doc in docs_reranked:
             docs_retrieved.append(doc['metadata'])
+            
+        print("DONE RETRIEVAL")
 
         if is_logging:
             summary = {}
@@ -366,10 +403,10 @@ def init_vectorstore(data_path: str, db_name: str, embed_columns:List[str], embe
     # vectorstore.index()
     # print("New index created ✅")
 
-    if not vectorstore.is_indexed():
+    if  not vectorstore.is_indexed():
         print("Indexing documents...")
         chunks = load_data(data_path, embed_columns)
-        vectorstore.load_chunk(chunks[:2])
+        vectorstore.load_chunk([chunks[-1]])
         print("Documents loaded and chunked ✅")
         vectorstore.embed()
         print("Documents embedded ✅")
